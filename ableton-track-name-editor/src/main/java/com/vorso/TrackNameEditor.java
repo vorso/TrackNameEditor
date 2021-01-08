@@ -129,18 +129,19 @@ public static void main(String[] args) throws IOException, InterruptedException 
                         //File xml = new File()
                         //compressGzipFile
 
-                        //alteredProjectFile = new File(Project_File.getAbsolutePath().replace(".als", " - Renamed.als"));
                         StreamResult streamResult = new StreamResult(XMLFile);
             
                         transformer.transform(domSource, streamResult);
 
-                        GZipper.compressGzipFile(XMLFile.getAbsolutePath(), Project_File.getAbsolutePath().replace(".als", " - Renamed.als"));
+                        GZipper.compressGzipFile(XMLFile.getAbsolutePath(), Project_File.getAbsolutePath().replace(".als", " - " + function.name() + ".als"));
 
-                        alteredProjectFile = new File(Project_File.getAbsolutePath().replace(".als", " - Renamed.als"));
+                        alteredProjectFile = new File(Project_File.getAbsolutePath().replace(".als", " - " + function.name() + ".als"));
             
                         System.out.println("New .als project file " + ANSI_GREEN + alteredProjectFile.getName() + ANSI_RESET + " created in Ableton Live Project Folder.");
 
-                        System.out.println("Changed " + ANSI_GREEN + numberOfChanges + ANSI_RESET + " entires in the project XML.");
+                        System.out.println("Changed " + ANSI_GREEN + numberOfChanges + ANSI_RESET + " entries in the project XML.");
+
+                        XMLFile.delete();
 
                     } else {
                         System.out.println(ANSI_RED + "Selected file was not a .als file, operation cancelled" + ANSI_RESET);
