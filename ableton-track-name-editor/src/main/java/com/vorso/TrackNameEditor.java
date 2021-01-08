@@ -126,9 +126,6 @@ public static void main(String[] args) throws IOException, InterruptedException 
                         Transformer transformer = transformerFactory.newTransformer();
                         DOMSource domSource = new DOMSource(document);
 
-                        //File xml = new File()
-                        //compressGzipFile
-
                         StreamResult streamResult = new StreamResult(XMLFile);
             
                         transformer.transform(domSource, streamResult);
