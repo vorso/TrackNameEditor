@@ -206,17 +206,16 @@ public class TrackNameEditor {
      *
      * 
      * @return TRUE if set correctly, FALSE if not
-     * @throws IOException
      */
     private static Boolean parseProperties() throws IOException {
            
         List<String> lines = Files.readAllLines(Paths.get("paths.properties"), StandardCharsets.UTF_8);
         String abletonPath = "";
 
-        for(int i = 0; i < lines.size(); i++) {
-            if(lines.get(i).contains("ABLETON_PATH")) {
-                abletonPath = lines.get(i).replace("ABLETON_PATH:{", "").replace("}", "").replace(",", "");
-            } 
+        for (String line : lines) {
+            if (line.contains("ABLETON_PATH")) {
+                abletonPath = line.replace("ABLETON_PATH:{", "").replace("}", "").replace(",", "");
+            }
         }
 
         if("".equals(abletonPath)) {

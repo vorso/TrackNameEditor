@@ -1,0 +1,14 @@
+{
+    "platform": "windows64",
+    "jdk": "C:/Users/Rob/JDK/win/OpenJDK8U-jre_x64_windows_hotspot_8u275b01.zip",
+    "executable": "atne-windows64",
+    "classpath": [
+        "ableton-track-name-editor-0.jar"
+    ],
+    "mainclass": "com.vorso.TrackNameEditor",
+    "vmargs": [
+       "Xmx1G"
+    ],
+    "minimizejre": "hard",
+    "output": "atne-windows64"
+}
