@@ -1,41 +1,25 @@
 package com.vorso;
+
+import org.apache.commons.compress.compressors.gzip.GzipCompressorInputStream;
+import org.apache.commons.compress.compressors.gzip.GzipCompressorOutputStream;
+import org.apache.commons.compress.utils.IOUtils;
+
 import java.io.FileInputStream;
 import java.io.FileOutputStream;
 import java.io.IOException;
-import java.util.zip.GZIPInputStream;
-import java.util.zip.GZIPOutputStream;
+import java.nio.file.Path;
 
-/** GZipper
- * 
- * A GZipping Utility
- * 
- */
 public class GZipper {
 
-	public static void decompressGzipFile(String gzipFile, String newFile) throws IOException {
-		FileInputStream fis = new FileInputStream(gzipFile);
-		GZIPInputStream gis = new GZIPInputStream(fis);
-		FileOutputStream fos = new FileOutputStream(newFile);
-		byte[] buffer = new byte[1024];
-		int len;
-		while ((len = gis.read(buffer)) != -1) {
-			fos.write(buffer, 0, len);
+	public static void compressGZIP(Path input, Path output) throws IOException {
+		try (GzipCompressorOutputStream out = new GzipCompressorOutputStream(new FileOutputStream(output.toFile()))){
+			IOUtils.copy(new FileInputStream(input.toFile()), out);
 		}
-		fos.close();
-		gis.close();
 	}
 
-	public static void compressGzipFile(String file, String gzipFile) throws IOException {
-		FileInputStream fis = new FileInputStream(file);
-		FileOutputStream fos = new FileOutputStream(gzipFile);
-		GZIPOutputStream gzipOS = new GZIPOutputStream(fos);
-		byte[] buffer = new byte[1024];
-		int len;
-		while ((len = fis.read(buffer)) != -1) {
-			gzipOS.write(buffer, 0, len);
+	public static void decompressGZIP(Path input, Path output) throws IOException {
+		try (GzipCompressorInputStream in = new GzipCompressorInputStream(new FileInputStream(input.toFile()))){
+			IOUtils.copy(in, new FileOutputStream(output.toFile()));
 		}
-		gzipOS.close();
-		fos.close();
-		fis.close();
 	}
 }
