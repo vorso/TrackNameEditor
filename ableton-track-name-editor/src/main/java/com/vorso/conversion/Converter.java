@@ -2,8 +2,8 @@ package com.vorso.conversion;
 
 import com.vorso.TrackNameEditor.Format;
 import org.apache.commons.text.WordUtils;
-import org.apache.logging.log4j.LogManager;
-import org.apache.logging.log4j.Logger;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.w3c.dom.Document;
 import org.w3c.dom.Element;
 import org.w3c.dom.NodeList;
@@ -24,7 +24,7 @@ import static java.util.Objects.requireNonNull;
 
 public class Converter {
 
-    static final Logger logger = LogManager.getLogger(Converter.class);
+    static final Logger logger = LoggerFactory.getLogger(Converter.class);
 
     private final Format format;
     private final Path xmlFileCopy;

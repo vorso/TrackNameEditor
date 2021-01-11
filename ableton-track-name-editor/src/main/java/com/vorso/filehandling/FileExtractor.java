@@ -2,8 +2,8 @@ package com.vorso.filehandling;
 
 import com.vorso.GZipper;
 import org.apache.commons.compress.utils.FileNameUtils;
-import org.apache.logging.log4j.LogManager;
-import org.apache.logging.log4j.Logger;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import java.io.IOException;
 import java.nio.file.Files;
@@ -12,7 +12,7 @@ import java.nio.file.Paths;
 
 public class FileExtractor {
 
-    static final Logger logger = LogManager.getLogger(FileExtractor.class);
+    static final Logger logger = LoggerFactory.getLogger(FileExtractor.class);
 
     public Path getXmlCopy(Path alsFilePath) throws IOException {
         Path xmlFileName = Paths.get(FileNameUtils.getBaseName(alsFilePath.getFileName().toString()).concat(".xml"));
