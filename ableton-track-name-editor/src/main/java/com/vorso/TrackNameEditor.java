@@ -4,27 +4,38 @@ import java.io.File;
 import java.io.IOException;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
+import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.util.List;
+import java.util.Optional;
 import java.util.Scanner;
 
-import javax.swing.JFileChooser;
-import javax.xml.parsers.DocumentBuilder;
-import javax.xml.parsers.DocumentBuilderFactory;
-import javax.xml.transform.Transformer;
-import javax.xml.transform.TransformerFactory;
-import javax.xml.transform.dom.DOMSource;
-import javax.xml.transform.stream.StreamResult;
+import javax.swing.*;
+import javax.xml.parsers.ParserConfigurationException;
+import javax.xml.transform.TransformerException;
 
-import com.ibm.icu.lang.UCharacter;
-import com.ibm.icu.text.BreakIterator;
-
-import org.w3c.dom.Document;
-import org.w3c.dom.Element;
-import org.w3c.dom.NodeList;
+import com.vorso.conversion.Converter;
+import com.vorso.conversion.Converter.ConversionResult;
+import com.vorso.filehandling.FileExtractor;
+import com.vorso.filehandling.FileWriter;
+import com.vorso.filehandling.SourceFileFinder;
+import org.xml.sax.SAXException;
 
 /**
- * 
+ * Copyright 2021 Vorso
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ *     http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ *
  *  \\   //
  *   \\ //
  *    \//
@@ -72,99 +83,56 @@ public class TrackNameEditor {
     public static final String ANSI_YELLOW = "\u001B[33m";
     public static final String ANSI_PURPLE = "\u001B[35m";
 
-
     public static File Ableton;
-    public static File Project_File;
-    public static File alteredProjectFile;
-    public static Function function;
-    public static boolean gotAbleton = false;
+
     public static Scanner scanner = new Scanner(System.in);
-    public static int numberOfChanges = 0;
 
-public static void main(String[] args) throws IOException, InterruptedException {
+    public static void main(String[] args) {
+        try {
+            USER_OS = checkOS();
 
-            try {
-                USER_OS = checkOS();
+            Path updatedAlsFile = new TrackNameEditor().convertFiles();
 
-                gotAbleton = checkPropertiesFileExists() && parseProperties();
-
-                System.out.println(ANSI_YELLOW + "Open an Ableton .als file:" + ANSI_RESET);
-
-                JFileChooser projectFileChooser = new JFileChooser();
-                int returnValue = projectFileChooser.showOpenDialog(null);
-                
-                if (returnValue == JFileChooser.APPROVE_OPTION) {
-                    Project_File = projectFileChooser.getSelectedFile();
-                    String extension = Project_File.getAbsolutePath().split("\\.")[1];
-
-                    if (extension.equals("als")) {
-                        System.out.println("Opening file...");
-
-                        userInputSelectMode();
-
-                        String ALSPath = Project_File.getAbsolutePath();
-                        String XMLPath = ALSPath.split("\\.")[0].concat(".xml");
-                        GZipper.decompressGzipFile(ALSPath, XMLPath);
-                        File XMLFile = new File(XMLPath);
-                        
-                        DocumentBuilder documentBuilder = DocumentBuilderFactory.newInstance().newDocumentBuilder();  
-                        Document document = documentBuilder.parse(XMLFile);  
-                        document.getDocumentElement().normalize(); 
-
-                        NodeList nameList = document.getElementsByTagName("UserName");
-                        processText(nameList);             
-
-                        NodeList effectiveNameList = document.getElementsByTagName("EffectiveName");
-                        processText(effectiveNameList);
-
-                        NodeList clipList = document.getElementsByTagName("Name");
-                        processTextForOnlyNodesWithGivenParent(clipList, "AudioClip");
-                        processTextForOnlyNodesWithGivenParent(clipList, "MidiClip");
-                        processTextForOnlyNodesWithGivenParent(clipList, "MidiClip");
-
-                        TransformerFactory transformerFactory = TransformerFactory.newInstance();
-                        Transformer transformer = transformerFactory.newTransformer();
-                        DOMSource domSource = new DOMSource(document);
-
-                        StreamResult streamResult = new StreamResult(XMLFile);
-            
-                        transformer.transform(domSource, streamResult);
-
-                        GZipper.compressGzipFile(XMLFile.getAbsolutePath(), Project_File.getAbsolutePath().replace(".als", " - " + function.name() + ".als"));
-
-                        alteredProjectFile = new File(Project_File.getAbsolutePath().replace(".als", " - " + function.name() + ".als"));
-            
-                        System.out.println("New .als project file " + ANSI_GREEN + alteredProjectFile.getName() + ANSI_RESET + " created in Ableton Live Project Folder.");
-
-                        System.out.println("Changed " + ANSI_GREEN + numberOfChanges + ANSI_RESET + " entries in the project XML.");
-
-                        XMLFile.delete();
-
-                    } else {
-                        System.out.println(ANSI_RED + "Selected file was not a .als file, operation cancelled" + ANSI_RESET);
-                        return;
-                    }
-                } else {
-                    System.out.println("Operation Cancelled");
-                    return;
-                }   
-                if(gotAbleton) {
-                    userInputOpenAbleton();
-                }
-                System.out.println("Thank you for using :)");
-                scanner.close();
+            if(checkPropertiesFileExists() && parseProperties()) {
+                userInputOpenAbleton(updatedAlsFile);
             }
-
-            catch (Exception e) {
-                System.out.println(ANSI_RED + "Encountered an error." + ANSI_RESET);
-                scanner.close();
-                e.printStackTrace();
-            } 
+        } catch (Exception e) {
+            System.out.println(ANSI_RED + "Failed to convert [" + e + "]" + ANSI_RESET);
         }
-        
-    public static void userInputOpenAbleton() throws IOException {
-        Boolean yn = true;
-        Boolean open = false;
+    }
+
+    public enum OS {
+        WINDOWS,
+        MAC
+    }
+
+    public enum Format {
+        UPPERCASE,
+        LOWERCASE,
+        TITLECASE
+    }
+
+    private Path convertFiles() throws IOException, ParserConfigurationException, SAXException, TransformerException, ClassNotFoundException, UnsupportedLookAndFeelException, InstantiationException, IllegalAccessException {
+        Path alsFile = new SourceFileFinder().getAlsPath().orElseThrow(() -> new RuntimeException("No file selected, Operation cancelled"));
+        Path xmlFile = new FileExtractor().getXmlCopy(alsFile);
+
+        Format format = userInputSelectMode().orElseThrow(() -> new RuntimeException("No format selected, Operation cancelled"));
+
+        ConversionResult conversionResult = new Converter(format, xmlFile).convert();
+
+        Path updatedAlsFile = new FileWriter().writeFileToProjectFolder(alsFile, conversionResult.getXmlFileConvertedOutput(), format);
+
+        System.out.println("New .als project file " + ANSI_GREEN + updatedAlsFile.getFileName() + ANSI_RESET + " created in Ableton Live Project Folder.");
+        System.out.println("Changed " + ANSI_GREEN + conversionResult.getNumberOfChanges() + ANSI_RESET + " entries in the project XML.");
+        System.out.println("Thank you for using :)");
+        scanner.close();
+
+        return updatedAlsFile;
+    }
+
+    public static void userInputOpenAbleton(Path updatedAlsFile) throws IOException {
+        boolean yn = true;
+        boolean open = false;
             
         System.out.println(ANSI_YELLOW + "Open the project file? " + ANSI_PURPLE + "(y/n)" + ANSI_RESET);
 
@@ -187,83 +155,31 @@ public static void main(String[] args) throws IOException, InterruptedException 
         }
 
         if(open) {
-            Process openAbleton = OpenAbleton(alteredProjectFile);
+            Process openAbleton = OpenAbleton(updatedAlsFile);
         }
     }
 
-    public static void userInputSelectMode() {
-        Boolean waiting = true;
-
+    public Optional<Format> userInputSelectMode() {
         System.out.println(ANSI_YELLOW + "Please select a mode: " + ANSI_PURPLE + "(1/2/3)" + ANSI_RESET);
         System.out.println("    " + ANSI_PURPLE + "1." + ANSI_RESET + " UPPER CASE");
         System.out.println("    " + ANSI_PURPLE + "2." + ANSI_RESET + " lower case");
         System.out.println("    " + ANSI_PURPLE + "3." + ANSI_RESET + " Title Case");
-        
-        while(waiting) {
-            switch(scanner.nextLine()) {
+
+        switch (scanner.nextLine()) {
             case "1":
-                function = Function.UPPERCASE;
-                waiting = false;
-                break;
+                return Optional.of(Format.UPPERCASE);
             case "2":
-                function = Function.LOWERCASE;
-                waiting = false;
-                break;
+                return Optional.of(Format.LOWERCASE);
             case "3":
-                function = Function.TITLECASE;
-                waiting = false;
-                break;
+                return Optional.of(Format.TITLECASE);
             default:
-                System.out.println(ANSI_YELLOW + "Please enter " + ANSI_PURPLE + "1/2/3" + ANSI_RESET); 
-                break;
-            }
+                return Optional.empty();
         }
-
     }
 
-    public static Process OpenAbleton(File projectFile) throws IOException {
-        String[] params = {Ableton.getAbsolutePath(), projectFile.getAbsolutePath()};
+    public static Process OpenAbleton(Path projectFile) throws IOException {
+        String[] params = {Ableton.getAbsolutePath(), projectFile.toFile().getAbsolutePath()};
         return Runtime.getRuntime().exec(params);
-    }
-
-    public static void processText(NodeList nodes) {
-        for(int i = 0; i < nodes.getLength(); i++) {
-            Element e = (Element)nodes.item(i);
-
-            if(e.getParentNode().getParentNode().getNodeName() == "MasterTrack") {
-                continue;
-            }
-            numberOfChanges++;
-            e.setAttribute("Value", procText(e.getAttribute("Value")));
-        }
-    }
-
-    public static void processTextForOnlyNodesWithGivenParent(NodeList nodes, String parentName) {
-        for(int i = 0; i < nodes.getLength(); i++) {
-            Element e = (Element)nodes.item(i);
-
-            if(!e.getParentNode().getNodeName().equals(parentName)) {
-                continue;
-            }
-            numberOfChanges++;
-            e.setAttribute("Value", procText(e.getAttribute("Value")));
-        }
-    }
-
-    public static String procText(String text) {
-        switch (function) {
-            case UPPERCASE: return text.toUpperCase();
-            case LOWERCASE: return text.toLowerCase();
-            case TITLECASE: return convertToTitleCase(text);
-            default: return text;
-        }
-    }
-              
-    static String convertToTitleCase(String input) {
-        if (input == null || input.isEmpty()) {
-            return input;
-        }
-        return UCharacter.toTitleCase(input, BreakIterator.getTitleInstance());
     }
 
     public static OS checkOS(){
@@ -275,11 +191,10 @@ public static void main(String[] args) throws IOException, InterruptedException 
         return OS.WINDOWS;
     }
 
-
     public static Boolean checkPropertiesFileExists() {
         File properties = new File("paths.properties");
         if(!properties.isFile()) {
-            System.out.println(ANSI_RED + "Properties file not found." + ANSI_RESET);
+            System.out.println(ANSI_RED + "Properties file not found. Ableton not launching" + ANSI_RESET);
             return false;
         }
         return true;
@@ -291,17 +206,16 @@ public static void main(String[] args) throws IOException, InterruptedException 
      *
      * 
      * @return TRUE if set correctly, FALSE if not
-     * @throws IOException
      */
     private static Boolean parseProperties() throws IOException {
            
         List<String> lines = Files.readAllLines(Paths.get("paths.properties"), StandardCharsets.UTF_8);
         String abletonPath = "";
 
-        for(int i = 0; i < lines.size(); i++) {
-            if(lines.get(i).contains("ABLETON_PATH")) {
-                abletonPath = lines.get(i).replace("ABLETON_PATH:{", "").replace("}", "").replace(",", "");
-            } 
+        for (String line : lines) {
+            if (line.contains("ABLETON_PATH")) {
+                abletonPath = line.replace("ABLETON_PATH:{", "").replace("}", "").replace(",", "");
+            }
         }
 
         if("".equals(abletonPath)) {

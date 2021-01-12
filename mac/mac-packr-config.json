@@ -1,0 +1,14 @@
+{
+    "platform": "mac",
+    "jdk": "C:/Users/Rob/JDK/mac/OpenJDK8U-jre_x64_mac_hotspot_8u275b01.tar.gz",
+    "executable": "atne-mac",
+    "classpath": [
+        "ableton-track-name-editor-0.jar"
+    ],
+    "mainclass": "com.vorso.TrackNameEditor",
+    "vmargs": [
+       "Xmx1G"
+    ],
+    "minimizejre": "hard",
+    "output": "atne-mac"
+}
