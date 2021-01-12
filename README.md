@@ -19,10 +19,14 @@ Requires
 * JDK for either mac or Windows [jdks](https://adoptopenjdk.net/releases.html)
    
 To build: 
+  * Navigate to directory containing pom.xml
   * `maven clean install` runs the tests and builds the shaded jar
   
-To Run  
-  * `java -jar ableton-track-name-editor-0.jar` runs the application
+To Run
+  * Navigate to directory containing pom.xml
+  * `mvn exec:java -Dexec.mainClass="com.vorso.TrackNameEditor"`
+  or
+  * `java -jar Target/ableton-track-name-editor-0.jar` to run without Maven (currently does not support text colouring in Commmand Prompt)
   
 > n.b Alternate, ready-to-run solutions tba.  
 
