@@ -125,7 +125,7 @@ public class TrackNameEditor {
         System.out.println("New .als project file " + ANSI_GREEN + updatedAlsFile.getFileName() + ANSI_RESET + " created in Ableton Live Project Folder.");
         System.out.println("Changed " + ANSI_GREEN + conversionResult.getNumberOfChanges() + ANSI_RESET + " entries in the project XML.");
         System.out.println("Thank you for using :)");
-        scanner.close();
+        
 
         return updatedAlsFile;
     }
@@ -153,7 +153,7 @@ public class TrackNameEditor {
                 break;
             }
         }
-
+        scanner.close();
         if(open) {
             Process openAbleton = OpenAbleton(updatedAlsFile);
         }
